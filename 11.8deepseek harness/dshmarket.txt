@@ -1,0 +1,335 @@
+================================================================
+dshmarket —— DeepSeek Harness 里的可视化插件市场（DSH 插件市场收录）
+配套资料整理 | 依据：npm 包元数据、官方 README（v1.73.16）
+================================================================
+
+【一句话定位】
+装在 DeepSeek Harness 里的插件市场：逛一逛，点一下，装好。
+它既是「图形化市场」（浏览/搜索/一键安装/更新/主题/备份/诊断），
+同一份目录又是「插件市场索引」，可被宿主 Discover 页和智能体工具检索。
+dsh 0.2.1 起它是「插件」页里「已安装」旁边的「插件市场」页签。
+
+----------------------------------------------------------------
+一、基本信息
+----------------------------------------------------------------
+插件市场名称 / npm 包名：dshmarket
+市场内显示名：dsh-market
+最新版本（整理时）：1.73.16
+许可证：MIT
+维护者：fkysly
+GitHub：https://github.com/dsh-market/dsh-market
+官网：https://dshmarket.com
+npm：https://www.npmjs.com/package/dshmarket
+运行时依赖：undici、js-yaml
+DSH 相关：dsh.bundle.patch = ./cordis.patch.yml
+兼容要求：dsh web 0.1.0-rc.6 及以上；更老的宿主会自行禁用并在浏览器控制台说明原因
+（桌面端若内置了较老的 dsh，常见表现就是「插件市场入口始终不出现」）
+
+----------------------------------------------------------------
+二、安装
+----------------------------------------------------------------
+① 官方 DSH Desktop：
+   应用内打开「设置 → 插件」→ 搜索 dshmarket → 通过应用的插件管理器安装。
+   全程不需要命令行。
+   注意：在装有 DSH Desktop 的机器上执行
+   `dsh plugin --profile web add dshmarket` 可能报告成功，
+   但装进的是 profiles/web，而不是桌面端使用的 profile —— 桌面端里不会出现。
+   桌面端的 profile 由应用管理，必须走应用内「设置 → 插件」。
+
+② 普通 dsh web：
+   dsh plugin --profile web add dshmarket
+   然后重启 dsh web。
+
+③ 自定义 profile：把命令里的 web 换成宿主实际的 profile 名：
+   dsh plugin --profile <profile> add dshmarket
+   按宿主的重启说明操作。
+
+④ 从 GitHub 源码（不预构建）：
+   add github:dsh-market/dsh-market
+   （pnpm 会先询问是否运行该包的 build 脚本）
+   同一 Release 附带的预构建 tarball 则无需该步骤：
+   dsh plugin --profile <profile> add \
+     https://github.com/dsh-market/dsh-market/releases/download/v<version>/dshmarket-<version>.tgz
+
+安装后入口：
+- dsh 0.2.1+：打开「插件」页 → 选「已安装」旁的「插件市场」页签
+  （纯 dsh web 也有，不需要桌面应用）。
+- dsh 0.2.0 及更早：唯一入口是「设置 → 插件市场」
+  （0.2.1 起「设置」对话框收进了账户菜单）。
+- 想在任意位置一键直达：市场可以在侧边栏放一行自己的「插件市场」入口，
+  在「插件」页市场卡片里开启。
+- 以上三个入口都能在卡片「高级」分组里单独开关，市场拒绝关闭最后一个入口。
+- 反向入口：已安装插件的「···」菜单在 dsh 0.2.1+ 提供「View in Plugins」，
+  会打开宿主自己的插件页（那里才能逐行开关该插件的条目）。
+
+----------------------------------------------------------------
+三、它同时是一份「插件市场索引」
+----------------------------------------------------------------
+在 dsh 0.2.1+：打开「插件 → Discover → Index sources」，
+添加 https://cdn.jsdelivr.net/npm/dsh-plugin-catalog/index.json
+这是本目录的 format-1 索引，从 npm 提供，各地加载都快
+（dsh 给一个源 15 秒；GitHub Pages 的两个副本
+ https://awesome-dsh-plugin.com/index.json 与 https://dshmarket.com/index.json
+ 在部分网络下可能超时）。
+之后宿主的 Discover 页和 `plugin_market` 智能体工具都能搜索它。
+
+----------------------------------------------------------------
+四、功能清单
+----------------------------------------------------------------
+◆ 浏览与搜索
+   完整社区目录（4200+ 插件，每天增长）：分类筛选、星数、Top/New 排序、
+   跟随 UI 语言的双语描述。
+
+◆ 宿主感知的兼容性发现
+   卡片显示插件通过 engines.dsh 或成套的 @deepseek-ai/dsh-* peers 声明的 DSH 要求；
+   兼容性过滤器只隐藏「与当前宿主确认不匹配」的条目。
+   仅 GitHub 的条目会读取所链接包的 manifest（含 monorepo 子目录）；
+   Release 下载读取所选 release tag（含 latest/download 背后的当前 tag）。
+   未声明、格式错误或不可用的要求保持 unknown 且仍可见。
+   公开 manifest 事实会缓存，兼容性按运行中的宿主实时评估。
+
+◆ 截图
+   AppStore 式截图，多张自动轮播，点击看大图：
+   作者精选图直接显示在卡片上（零额外请求）；
+   没有精选图的插件在打开安装对话框时自动从 README 提取。
+   图片只从 GitHub 托管加载。
+
+◆ 评论
+   每张卡片就地打开该插件的讨论线程，与 dshmarket.com、
+   awesome-dsh-plugin.com 上看到的是同一个线程（一个插件只有一份对话）。
+   基于 GitHub Discussions（giscus）：打开时才加载，只有发帖需要 GitHub 账号，
+   上方提示会明确说明会连接 giscus.app 与 GitHub。
+   本地 dsh web 上阅读仍内嵌，另有 GitHub 动作在新标签页打开确切讨论以登录/发帖，
+   跨站返回不携带也不依赖宿主会话。
+
+◆ 收藏
+   Discover 或 Themes 页签收藏插件与主题；独立 Favorites 页签列出，
+   支持搜索、排序、安装。书签持久化在 profile 的 market state（state.json）；
+   已离开目录的条目可一键清除。
+
+◆ 分组
+   把已安装插件组织成命名分组（重命名、删除、组内搜索）；
+   一个插件只属于一个组，默认未分组。
+   分组自带开关：全开 / 全关 / 成员真实混合状态 —— 可整组切换而不影响其他插件。
+   每个组最多容纳一个主题。分组本身是 profile state.json 里的本地状态。
+
+◆ 备注
+   给任意已安装插件写一行自己的说明，替换作者描述显示在该行上，
+   让四十个插件的列表能回答「我当初为什么装它」。本地存储，绝不外发。
+
+◆ 主题
+   独立页签管理社区主题与皮肤：安装 → 立即生效；一键切换
+   （主题互斥，选择跨重启保留）；卸载即还原。
+
+◆ 一键安装
+   确认来源，实时进度；多数插件刷新页面即生效，无需重启。
+
+◆ 备份与恢复
+   把 profile 的插件列表与配置导出为可读 JSON，在另一台机器导入；
+   可存 WebDAV 每日自动备份，或通过私有 GitHub Gist 同步。
+   恢复是「合并」（备份之后安装的插件会保留），写入前校验，失败回滚。
+
+◆ 更新
+   逐插件检查更新（npm 版本或固定 commit 对比 HEAD）、一键更新、全部更新；
+   市场自身也以同样方式自更新。
+   从归档链接安装的插件只通过它自己的来源更新 ——
+   目录里仅同名条目永远不会被当作它的更新，避免更新时被静默替换成另一个插件。
+   每行有更新时带「What changed」链接（release notes，无法对应版本时给 commits）。
+   暂不处理的提醒可在本次启动内忽略，重启后恢复提醒
+   （忽略 ≠ 关闭）。
+   另有公开的 update API v1（beta）供插件自己的设置页使用。
+
+◆ GitHub 路由容错
+   中国下载区域下，Git refs、README 内容、头像各有自己的回退顺序；
+   市场记住最后可用路线，只有传输/HTTP/payload 校验失败才切换，
+   并拒绝伪装成 HTTP 200 的代理错误页。
+   若所有内置路线都失败：「设置 → 插件 → 插件配置 → GitHub acceleration」
+   可填一个持久的自定义 HTTPS 前缀；DSHM_GITHUB_PROXY 仍是运维方覆盖项。
+
+◆ 卸载
+   两步确认；本会话内安装的插件可在线移除。
+
+◆ 热禁用 / 启用
+   开关会把 `- id: …` + `disabled: true|false` 写进 profile 的
+   cordis.patch.yml（官方 patch 层，机制移植自 dsh-plugin-hub）：
+   DSH 的 HMR 约 1 秒内重新组合，无需重启，加载器每次启动都会重新应用该选择。
+   手工编辑过的 patch 行会显示为徽章；宿主基础设施插件受保护不可切换；
+   损坏的 patch 文件不会被「越改越坏」。
+
+◆ 需要重启时
+   无法热加载的变更会在待重启横幅旁显示一键重启；该动作限制为同源 loopback 请求。
+
+◆ 重启失败后的恢复
+   DSH 启动是全有或全无：一个插件加载失败会拖垮整个进程，市场 UI 也随之消失。
+   失败提示页现在提供「Adjust plugins」：被 DSH 点名的插件标红且默认不勾选，
+   你选择下次启动启用哪些，选择通过市场自己用的 cordis.patch.yml 行写入
+   （另加 dsh.profile.bundles 作为禁用载体），然后重试启动。
+   该页由分离的重启助手在原地址提供，所以宿主已死也能用；
+   直接打开该 URL 也能渲染独立版本。DSH 正常启动时不会出现。
+
+◆ 零术语
+   缺少组件（如 pnpm）时自动检测并提示一键自动安装。
+
+◆ 日志导出
+   一键生成脱敏纯文本日志（家目录路径与凭据形态被掩码，绝不发送到任何地方），
+   市场版本号就显示在页面标题旁，问题截图自带版本信息。
+
+◆ 设置卡片（市场管理自己）
+   dsh 0.1.0-rc.7+ 起市场和其他插件一样管理自己：
+   设置 → 插件 → 插件配置（宿主仍有设置页时）；
+   dsh 0.2.1 起在「插件」页市场自己的卡片上（设置页已移除）：
+   查看运行版本、选择发布通道（stable / beta；开发者模式开启后出现 dev，
+   dev 直接发布分支构建）、更新、移除市场 ——
+   并可选「卸载时顺带清理它写下的禁用行」，否则被它关掉的插件会一直关着且没有 UI 再打开。
+
+◆ 诊断
+   一页看全部：插件加载顺序与冲突面，bundle stack（官方/社区徽章）、
+   重复加载器条目、依赖版本不匹配、多版本核心包、overrides 与非法配置项、
+   残留目录（更新中断后没有 package.json 的包目录、pnpm 自己的 *_tmp_* 暂存目录）。
+   这些都不会阻止启动，所以只列出不告警；这里也是唯一点名磁盘实际内容的地方。
+   术语通俗、问题块高亮、全部可折叠。
+
+◆ 加载顺序
+   把社区 bundle 拖成你想要的顺序，或采用根据插件自身 before/after 规则推导的建议顺序。
+   试用合成通过之前什么都不写入；面板会先告诉你新顺序会带来什么变化
+   （overrides、非法或重复条目）再让你应用。
+
+◆ AI fix
+   一键把诊断驱动的修复提示词复制到剪贴板（错误/警告/顺序冲突 + 保守范围指令），
+   你粘贴到新对话再决定是否发送。
+   提示词先要求 Agent 判断自己是否就是运行该 profile 的 harness —— 如果是，
+   硬性禁止修改实时组合、升级/重启 harness 或核心包、重装依赖，
+   而是让它写幂等的 apply 脚本 + rollback 脚本，由你在外部终端运行并回贴输出。
+
+----------------------------------------------------------------
+五、速度
+----------------------------------------------------------------
+安装优先顺序：
+1) 仓库已验证的 npm 包
+2) 作者提供的 GitHub Release 预构建 tarball
+3) 全仓库 GitHub 源码下载
+预构建安装通常几秒完成，且不需要本地 build 脚本；
+只有源码插件才依赖你到 GitHub 的连接。
+
+----------------------------------------------------------------
+六、安全
+----------------------------------------------------------------
+- 安装源仅限精选注册表 awesome-dsh-plugin 收录的条目，其他一律拒绝
+- 构建脚本默认保持阻止（pnpm ≥10）；允许某个包执行是你对该包的显式选择
+- 终端/CLI 类插件在装进 web profile 之前会被标记
+- 安装端点只接受同源 POST；市场从不向外打电话
+- 备份可能包含 profile 配置里的凭据 —— 导出/上传前 UI 会警告；
+  WebDAV 同步仅 HTTPS，拒绝私网目标，密码绝不存浏览器
+- 需要认证的 Gist 请求始终直连 api.github.com；
+  bearer token 绝不发给公共 GitHub 加速服务
+- GitHub 源码归档保持规范 codeload URL，pnpm 完整性策略仍然生效
+- 重启端点额外要求「直连 loopback 客户端」（转发请求被拒），
+  并原样重启 DSH 的入口、参数、环境与工作目录
+- 一键重启会拉起分离的替代进程。若本宿主是 systemd 自己的服务进程，
+  按钮会自动隐藏（否则市场会把接管进程连同 unit 的 cgroup 一起杀掉，服务起不来），
+  待重启提示仍会显示并说明。
+  检测要求「systemd 标记」且「是该 unit 的主进程」二者同时成立
+  （INVOCATION_ID 会被 unit 的所有后代继承，普通终端也会带上）。
+  pm2 / launchd 不会被检测，需要显式设置：
+    # 在 profile patch 里，必须放在 config: 下
+    - id: dsh-market
+      name: dshmarket
+      config:
+        allowRestart: false   # 不要放在 name: 同级顶层
+  dsh 0.1.7+ 宿主从插件自己的 Config schema 推导设置，
+  不再提供插件注册的设置命名空间，所以只能改 profile patch。
+  生效后 GET /dsh-market/status 会返回 "restart": false。
+- 需要编译的插件（原生模块）在 dsh 进程继承的环境里构建 ——
+  GUI、systemd/launchd unit 或 Windows 开始菜单启动并不会继承 shell 的环境。
+  若需要比机器默认更新的编译器，可在 config: 下用 buildEnv 固定构建期变量
+  （相当于在终端里 CC=... CXX=... dsh，但不必全局修改）：
+    - id: dsh-market
+      name: dshmarket
+      config:
+        buildEnv:
+          CC: /usr/bin/gcc-11
+          CXX: /usr/bin/g++-11
+  UI 里在「设置 → 插件 → 插件配置 → dshmarket → Build environment」
+  逐行 KEY=value 编辑；保存后下次安装即生效，无需重启；
+  清空列表则回到 profile 配置。PATH 与 CI 始终由市场管理，两处都不能覆盖。
+- 终端附加启动时，分离的替代进程在原终端关闭后仍继续运行
+- 列出 ≠ 背书：插件是第三方代码，请只安装你信任的来源
+
+----------------------------------------------------------------
+七、数据源与索引
+----------------------------------------------------------------
+- 每次打开实时从 https://awesome-dsh-plugin.com/plugins.json 拉取，
+  CI 每天刷新精选条目、npm 映射与星数；没有过期快照。
+  失败会报告实际原因和耗时，并给重试按钮。
+- 刻意不做内置快照：目录每天增长，过期的答案不是降级而是错误
+  （今早发布的插件会被读成「不存在」）。
+- 中国下载区域：同一目录优先从 npm 读（同一套区域感知路线），
+  每个中国镜像都已携带它，从镜像而来而非回源，且带版本号，
+  坏目录构建可以回滚而不是只能向前修。原始源永远排在最后。
+  区域检测只做一次并记住结果；「设置 → 插件 → 插件配置」可覆盖。
+- 若该主机在你的网络不可达，可指向镜像：
+    DSHM_REGISTRY_URL=https://your-mirror.example/plugins.json dsh web
+- 统计口径：npm 计数覆盖所述 30 天窗口；仅 GitHub 的 Release 可能显示所有公开
+  Release 资产的生命周期下载量（含包、校验和、伴随文件）。
+  这些数字从不相加，也不称为安装数/用户数。Tooltip 附采集时间。
+  目录中的宿主声明只对确切固定的安装 URL 接受。
+
+----------------------------------------------------------------
+八、提交插件
+----------------------------------------------------------------
+本仓库是「市场应用」，不是目录本身。
+插件列表来自精选注册表 awesome-dsh-plugin：
+https://github.com/awesome-dsh-plugin/awesome-dsh-plugin
+要让插件出现在市场里，请去那个仓库提 PR（列表中加一条），
+站点与市场会自动收录（通常一天内）。请不要向本仓库提插件条目 PR。
+
+----------------------------------------------------------------
+九、Roadmap、反馈与 Friends
+----------------------------------------------------------------
+- Bug → GitHub Issues（附上市场「Export log」能让诊断快约十倍）
+- 功能想法 → Roadmap：https://github.com/orgs/dsh-market/projects/1
+  （Issue 只留给坏掉的东西；提案会被移到 Roadmap 并关闭，讨论保留）
+- 每个 Roadmap 项都欢迎社区 PR，动手前先在条目下说明，避免重复实现
+
+Friends（生态伙伴）：
+- DSH Desktop（dataelement）：https://github.com/dataelement/dsh-desktop
+  https://dshdesktop.com —— 桌面应用，免装 Node.js，默认预置本插件市场
+- DeepSeek Harness Desktop（hairyf）：
+  https://github.com/hairyf/deepseek-harness-desktop —— Tauri 桌面应用，
+  首次运行提供安装本市场作为推荐预置
+- deepseek-harness-desktop（anywhere-labs）：
+  https://github.com/anywhere-labs/deepseek-harness-desktop —— Electron 桌面应用，
+  一切皆插件，profile 切换、内置 Node 与 pnpm、快照式可恢复安装
+  https://dshdesktop.cn
+- DSH App（RyensX）：https://github.com/RyensX/dsh-app —— 基于 Tauri 2 而非 Electron，
+  体积小、用系统 webview，AGPL-3.0
+- Local DSH（liangchen-harold）：https://github.com/liangchen-harold/local-dsh ——
+  可在本机跑模型的桌面客户端，内置 llama.cpp + Node + pnpm + DSH，
+  下载 GGUF 模型即可离线回答；Tauri，目前面向 Apple Silicon Mac
+  https://localdsh.com
+- dsh desktop（MochiNek0）：https://github.com/MochiNek0/dsh-desktop ——
+  跨平台 Tauri 客户端（Windows/macOS/Linux），安装包很小
+  （Windows 2.3 MB、macOS 5.8 MB），启动时后台拉起 dsh web 并嵌入原生窗口，
+  与 CLI 共享会话与配置；本市场在其内置插件面板推荐列表第一位
+- DSH Get：https://www.dshget.com/ —— 可搜索的 DSH 插件网页目录，
+  分类筛选、双语描述、安装命令、详情页；
+  规范化目录快照在 https://github.com/bobby-sheng/dshget-data
+- modlens：https://github.com/liustack/modlens —— DSH 首个视觉插件，
+  给 DeepSeek / GLM 等纯文本模型加上视觉理解（OCR、版式、语义，返回结构化 JSON），
+  本市场可直接安装：
+    dsh plugin --profile web add @liustack/modlens
+
+----------------------------------------------------------------
+十、相关链接
+----------------------------------------------------------------
+GitHub：https://github.com/dsh-market/dsh-market
+Issues：https://github.com/dsh-market/dsh-market/issues
+Roadmap：https://github.com/orgs/dsh-market/projects/1
+官网：https://dshmarket.com
+npm：https://www.npmjs.com/package/dshmarket
+插件目录（提交 PR 处）：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin
+目录数据：https://awesome-dsh-plugin.com/plugins.json
+索引源（format 1）：https://cdn.jsdelivr.net/npm/dsh-plugin-catalog/index.json
+文档：README.md / README.zh.md / UPDATE-API-V1.md
+许可证：MIT
+================================================================

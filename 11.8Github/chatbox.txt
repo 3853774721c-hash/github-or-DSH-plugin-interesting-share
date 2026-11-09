@@ -1,0 +1,46 @@
+Chatbox（桌面版 AI 聊天客户端）
+GitHub: https://github.com/chatboxai/chatbox
+（原地址 Bin-Huang/chatbox，现由 chatboxai 组织维护）
+官网: https://chatboxai.app
+42,000+ Star，4,300+ Fork，GPL-3.0 开源，TypeScript（Electron + React），2023 年开源
+
+一、是什么
+ChatGPT / Claude / Gemini 等大模型的桌面客户端，把各家 API 和本地 Ollama 模型统一到一个
+界面里。仓库是 Chatbox Community Edition（社区版），2024 年底宣布"重新开源"（issue #2266），
+与官方 Pro 私有仓库双向同步代码。
+
+二、支持的模型 / 服务商
+- OpenAI（ChatGPT）、Azure OpenAI、Claude、Google Gemini Pro
+- Ollama 本地模型：llama2、Mistral、Mixtral、codellama、vicuna、yi、solar 等
+- ChatGLM-6B
+- 任何兼容 OpenAI API 的第三方服务（DeepSeek、各类中转/自建网关都能填）
+- 内置 DALL·E-3 文生图
+
+三、主要功能
+- 本地数据存储：聊天记录保存在本机，隐私自己掌握。
+- 增强 prompt：辅助改写/聚焦提问，回答更准。
+- Markdown + LaTeX 公式 + 代码语法高亮。
+- 流式回复（打字机效果）。
+- Prompt 库：收藏、整理常用提示词。
+- 消息引用：针对某条回复继续追问，保持上下文。
+- 快捷键、深色主题、多语言（英/简繁中/日/韩/法/德/俄/西）。
+- 团队协作：团队成员可共享 OpenAI API 资源。
+- 提供免部署安装包，开箱即用。
+
+四、平台
+- 桌面：Windows 10+、macOS 11+（Intel 与 Apple Silicon 双架构）、Linux（AppImage）
+- 另有 Web 版、iOS 版、Android 版（应用商店/APK）
+
+五、开发 / 自编译
+- 需要 Node.js v20–v22、pnpm v10+、Git
+- 克隆后 pnpm install，pnpm dev 起热更新开发环境
+- 常用命令：pnpm dev（开发）、pnpm build（生产构建）、pnpm package（打包当前平台）、
+  pnpm package:all（全平台打包）、pnpm lint（Biome 检查）、pnpm test（Vitest 测试）
+- 目录结构：src/main（Electron 主进程）、src/renderer（React UI）、src/preload、src/shared、
+  doc/、resources/、team-sharing/
+- Windows 构建报错时可设置 pnpm config set script-shell 指向 Git Bash
+
+六、注意事项
+- 仓库是"社区版"，功能与官方 Pro 版有差异，商业版部分功能不在开源仓里。
+- 用第三方 API Key 时注意各家计费；本地 Ollama 模型则完全免费但吃显存。
+- 适合：想要一个干净的本地 AI 客户端、不想被网页版绑定的人。

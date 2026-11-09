@@ -1,0 +1,43 @@
+everything（The Everything Project：把全世界的软件重造一遍）
+GitHub: https://github.com/HeyPuter/everything
+7,700+ Star，820+ Fork，MIT 开源，JavaScript（Node.js ≥ 22.12），2026 年 10 月新建
+
+一、是什么
+"The Everything Project is an effort to rebuild and open-source the world's software from scratch."
+——从零开始重造并开源全世界的软件：Office、Slack、Photoshop、AutoCAD……目标是给每个常用
+商业软件都做一个开源的 Web 替代品。由开源云操作系统 Puter（puter.com）团队发起，2026 年
+10 月上线后迅速冲上 GitHub 趋势榜。
+
+二、仓库里已经有哪些"软件"
+单仓库、多应用，每个子目录就是一个独立应用：
+- Office：spreadsheet（表格）、documents（文档）、presentation（演示）、whiteboard（白板）、
+  pdf、notes（笔记）、records（数据库）
+- 协作：meetings（会议）、teamchat（团队聊天，Slack 替代）、email、contacts、calendar、
+  signatures（电子签名）
+- 创意工具：photo-studio（Photoshop 替代）、video-studio、vector-studio、audio-studio、
+  music-studio、3d
+- 工程：cad（AutoCAD 替代）、parametric（参数化建模）、circuits（电路设计）、building-design
+- 效率：tasks、projects、wiki、time-tracking、survey
+- 财务：accounting、invoicing、expenses、cap-table
+- 商业：crm、help-desk、contracts、pos（收银）、inventory、assets、hiring、shifts、childcare、
+  field-service、legal、fleet、property-management
+- 开发者工具：api-client（Postman 替代）
+- 游戏：chess（国际象棋）、backgammon（双陆棋）、checkers（跳棋）、solitaire（纸牌）、sudoku（数独）
+
+三、怎么在线体验 / 本地跑
+- 在线 Demo：每个应用一个 *.puter.com 子域名（如 spreadsheet.puter.com、docs.puter.com）
+- 本地运行：git clone 仓库 → cd src/[应用名] → npm install → npm run dev
+
+四、特点与看点
+- 野心极大：不是做一个软件，而是"软件全家桶"逐个重写。
+- 每个应用都是独立可跑的 Web 应用，体积小、上手快。
+- MIT 协议，可自由改造、二次开发。
+- 适合当：自建办公套件、学习各类 SaaS 前后端实现、找"某商业软件的开源替代"。
+
+五、注意：GitHub 上有多个"everything"，别搞混
+- HeyPuter/everything：就是上面这个"重造软件"项目（本笔记主体）。
+- voidtools 的 Everything：Windows 上秒搜本地文件名的神器，闭源免费，不在 GitHub 上。
+- srwi/EverythingToolbar（15,000+ Star，C#）：把 voidtools Everything 集成进 Windows 任务栏。
+  如果你原本想找的是"文件搜索 Everything"，请改看这个项目。
+- lin-ycv/EverythingPowerToys（3,300+ Star）：Everything 的 PowerToys Run 插件。
+- mmulet/term.everything（8,100+ Star，Go）：在终端里跑图形界面程序的骚操作项目。

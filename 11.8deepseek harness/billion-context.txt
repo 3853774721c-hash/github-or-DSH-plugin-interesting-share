@@ -1,0 +1,345 @@
+================================================================
+billion-context —— 上下文压缩插件（DSH 插件市场收录）
+配套资料整理 | 依据：npm 包元数据、官方 README（中文版）、包内 dsh 清单
+================================================================
+
+【一句话定位】
+架在「任意编程 Agent」与「模型 API」之间的通用上下文压缩代理（proxy）。
+它用 acp-kernel 压缩并重写 Anthropic / OpenAI 流式请求，把已消耗的对话折叠成
+分层摘要，让一个会话连跑数天 —— 官方口号：
+「小窗口（100k 上下文足矣）· 省 5 倍 token · 十亿级单会话 · 高压缩质量」
+「billion-context is all you need.」
+
+----------------------------------------------------------------
+一、基本信息
+----------------------------------------------------------------
+插件市场名称 / npm 包名：billion-context
+最新版本（整理时）：0.1.213
+许可证：MIT + 一条附加署名条款（见文末）
+作者 / 仓库：ranxianglei
+GitHub：https://github.com/ranxianglei/billion-context
+npm：https://www.npmjs.com/package/billion-context
+内核项目：acp-kernel（https://github.com/ranxianglei/acp-kernel）
+
+安装形态（package.json）：
+- bin：bili、bili-proxy（别名）
+- 引擎要求：node >= 20
+- 运行时依赖：zod 4.6.7、mysql2
+- DSH 相关：dsh.bundle.patch = ./dsh.bundle.patch.yml；
+  导出 "./dsh" → dist/agent/dsh-native.js
+- 另有 client 插件产物：dist/agent/*.js（pi / omp / opencode 等）
+
+补充：DeepSeek Harness 的插件市场里可以搜到它；本会话（你正在看的这个 DSH 会话）
+的上下文压缩正是由 billion-context 提供的 —— 系统提示里那句
+「Context management is provided by billion-context」就是它的自述。
+
+----------------------------------------------------------------
+二、它解决什么问题（为什么）
+----------------------------------------------------------------
+长编程会话会把上下文撑爆。各家 provider 按 token 计费，一旦超过上下文窗口，
+会话质量下降甚至直接崩掉。billion-context 把已消耗的对话压缩成分层摘要，
+让海量 token 穿过同一个上下文窗口。
+
+与宿主自带的摘要器不同，这里的压缩有三个关键性质：
+- 增量（incremental）：只在小范围内写入/更新摘要，不整体重写历史；
+- 可逆（reversible）：需要精确细节时可以解压回原始内容；
+- 前缀缓存友好（prefix-cache friendly）：缓存前缀保持完整，不乱动已缓存段落。
+健康会话的前缀缓存命中率通常在 95%–97%，压缩本身的开销 ≤2%。
+
+----------------------------------------------------------------
+三、工作原理
+----------------------------------------------------------------
+编程助手（Claude Code / Codex / Cursor / Aider / DSH ...）
+        │  把助手的 base URL 指向 proxy
+        ▼
+┌──────────────────────────────┐
+│      billion-context proxy    │  1. 解析请求（Anthropic 或 OpenAI 格式）
+│                               │  2. 对对话运行 acp-kernel 压缩
+│                               │  3. 注入 compress 工具 + 压缩哲学
+│                               │  4. 转发到真实模型 API
+│                               │  5. 重写流式响应
+└──────────────────────────────┘
+        │
+        ▼
+   真实模型 API（Anthropic / OpenAI / 兼容厂商）
+
+注入给模型的四个上下文管理工具（由模型自主决定何时调用）：
+- compress        —— 把一段消息范围折叠成详细摘要；
+- decompress      —— 需要精确细节时恢复某个已压缩范围；
+- search_context  —— 在压缩摘要与可见消息中做关键词检索；
+- acp_status      —— 上下文用量概览 + 哪些区间仍可压缩。
+
+何时压缩、压缩什么由「模型」决定，而不是硬截断。
+另外有温和的增长 nudge（默认约每增长 50K token 提醒一次，可通过
+compress.nudgeGrowthTokens 调整），仅输入就超窗时还有预检硬兜底。
+
+----------------------------------------------------------------
+四、三种接入方式（任选其一）
+----------------------------------------------------------------
+1) 原生插件（最原生）
+   bili plugin install <client>
+   代理住进客户端：装一次，之后照常启动客户端 —— 不用启动器、不用环境变量、
+   不用固定端口、不用改 URL。
+   例：bili plugin install dsh / pi / omp / opencode / kimi / hermes / zcode
+
+2) 启动器（免安装）
+   bili <client>
+   一条命令拉起代理 + 客户端。能吃代理/CA 环境变量的客户端走「证书 MITM」；
+   不吃的走隔离的 /bili/ 配置重写。真实配置文件从不被修改。
+   例：bili dsh / bili claude / bili codex / bili pi / bili opencode ...
+
+3) 改 URL（最通用）
+   bili                       # 启动代理（默认 8787）
+   然后客户端 baseURL 前加 http://localhost:8787/bili/
+   例：
+     改前：https://api.openai.com/v1
+     改后：http://localhost:8787/bili/https://api.openai.com/v1
+   完整上游 URL 嵌在路径里，proxy 无需配置就知道转发到哪。
+   网页引导：http://localhost:8787
+
+----------------------------------------------------------------
+五、在 DeepSeek Harness（dsh）里的用法
+----------------------------------------------------------------
+- 方式 A（启动器）：bili dsh
+  经 --patch 注入完整原生插件（真实 dsh 工具、会话绑定 /acp）；
+  非回环上游走代理 env，回环保留 overlay DSH_HOME 改写；
+  dsh 自动压缩会被关闭（两个压缩器不能抢同一份历史）。
+- 方式 B（原生插件，统一泳道）：
+      dsh plugin --profile <name> add billion-context
+  这正是 bili plugin install dsh 按 profile 驱动的那条命令（仅 npm 形态；
+  git checkout 没有已发布入口，直接填 GitHub 地址装到的是没有 dist/ 的源码，
+  bundle 永远加载不出来）。
+- 卸载：bili plugin remove dsh（经同一通道移除，配置快照存 .bili-bak）
+- 端口：bili start（手工）拥有 8787；lane 自动拉起的代理住在 18787 起的
+  自管端口区，碰撞 +1 跳口，每个 lane 记住自己的漂移。
+- 用 /acp 看当前会话状态面板；/acp-cache 看缓存命中报告（dsh 需宿主支持）。
+
+----------------------------------------------------------------
+六、支持 / 已适配的客户端（节选）
+----------------------------------------------------------------
+pi、omp（oh-my-pi）、opencode（1.x / 2.x）、dsh、kimi、hermes、zcode（Z.ai）、
+claude（Claude Code）、codex、jcode、gemini（Gemini CLI）、iflow、qwen（Qwen Code）、
+antigravity（agy）、mcode（MiniMax Code）、aider、copilot（GitHub Copilot CLI）、
+amp、kiro（AWS）、crush、zed、goose、trae、qoder、codebuddy、TRAE 等。
+
+说明：
+- 有原生插件接缝的：pi / omp / opencode / dsh / kimi / hermes / zcode / claude；
+- 只有启动器模式的：jcode、aider、copilot、amp、kiro、crush、zed、goose 等
+  （闭源或编译型二进制，无插件/工具注入接缝）；
+- codex 是特例：插件安装只提供 MCP shell 工具面（四个 ACP 工具），
+  模型流量只能经 env 路由，零配置全功能请用 bili codex。
+
+----------------------------------------------------------------
+七、安装与升级
+----------------------------------------------------------------
+Linux / macOS（用户级 prefix，不需要 sudo，也不改 npm 配置）：
+    npm install -g billion-context --prefix=~/.local
+    # bili 命令在 ~/.local/bin，没在 PATH 就加：
+    # export PATH="$HOME/.local/bin:$PATH"
+Windows（默认 prefix %APPDATA%\npm 用户可写）：
+    npm install -g billion-context
+
+其他命令：
+    bili --version
+    bili --port 9000            # 改监听端口
+    bili --host 0.0.0.0         # 监听所有网卡（远程 agent 用，注意无鉴权）
+    bili --debug                # 详细日志
+    bili --passthrough          # 不压缩直接转发（冒烟测试）
+    bili --config ~/my-bili.json
+    bili update                 # 立即检查并安装新版本
+    bili doctor --fix           # 收敛 dsh profile 的三本账（manifest/lockfile/盘上副本）
+    bili --no-auto-update
+
+Docker：
+    docker build -t billion-context .
+    docker run -d --name bili -p 8787:8787 \
+      -v bili-config:/root/.config/billion-context \
+      -v bili-data:/root/.local/share/billion-context \
+      -v bili-cache:/root/.cache/billion-context \
+      -v bili-state:/root/.local/state/billion-context \
+      billion-context
+    基础镜像 node:24-slim；容器内自更新默认关闭（ACP_AUTO_UPDATE=0）。
+
+从源码安装（开发用，master 是开发分支，可能不可用）：
+    git clone https://github.com/ranxianglei/billion-context.git
+    cd billion-context && npm ci && npm run build && npm link
+
+----------------------------------------------------------------
+八、配置
+----------------------------------------------------------------
+配置文件：~/.config/billion-context/billion-context.json
+（$XDG_CONFIG_HOME/billion-context/；可用 BILI_CONFIG_FILE 改路径）
+优先级：CLI 参数 > 环境变量 > 配置文件 > 内置默认值
+本机现状：C:\Users\38537\.config\billion-context\billion-context.json
+内容仅 {"providers": {}}（即全部走默认）。
+
+主要顶层键：
+- providers  —— 按 provider 的路由表：上游覆盖、模型上下文窗口、
+                按 provider/模型的压缩调参、wire 协议声明、compaction opt-in
+- compress   —— 三级压缩调参（全局 → provider → 模型）：阈值、nudge 节奏、
+                保留规则、prompts、tiers
+- network    —— 超时 / 重试 / keep-alive / preflight 节奏（含 upstreamTimeoutMs）
+- persist    —— 会话持久化格式 + tail（如 zstd）
+- sessions   —— 上限 + GC 策略（如 gc.maxAgeDays）
+- update     —— registry 镜像 + 检查间隔 + 升级撒点
+- diagnostics—— dump、render-tag 模式、注入开关
+- fakeCompletion、codexCompact、ccrRetrievalTtlMs、decompressTmpCap
+- mitm.handshakeTimeoutMs、compat.noCacheControl、compat.keepResponseId
+- pi.subagents（是否启用 pi 内置子代理）
+
+最小示例：
+{
+  "network": { "upstreamTimeoutMs": 900000 },
+  "persist": { "zstd": true },
+  "sessions": { "gc": { "enabled": true, "maxAgeDays": 14 } }
+}
+
+常在配置里解决的两类问题：
+- 上游代理（防火墙/GFW）：让代理自身出站走 v2rayA/clash（服务端 proxy 配置项）
+- 线上兼容角色改写（compat.roles）：上游拒绝 developer 角色时自动修复
+- 签名上游（body 级签名，如 CodeArts APIG 的 SDK-HMAC-SHA256）：
+  dsh 上透明重签；其他被识别出的方案一律本地拒收（要么重签+压缩，要么拒绝）
+
+----------------------------------------------------------------
+九、缓存健康：/acp 与 /acp-cache
+----------------------------------------------------------------
+- /acp         当前会话的 ACP 状态面板（会话、块、可压缩区间、用量）
+- /acp-cache   直接在客户端里打一份文字总结报告，顶部带可点击 Web UI 链接，
+               点进去是网页版会话页（折线图 + 逐断点归因）
+
+报告四块：
+- GRAND LEDGER   总账：总输入 / 总命中 / hit%，判定 HEALTHY 或异常；
+                 miss 拆解为 new content / compress re-pay /
+                 upstream-ttl-or-client-rewrite
+- FOLD ECONOMICS 每次折叠的经济账：净省多少、是否回本
+- LINE ITEMS     只列异常行（hit<85% 或 miss≥5000）
+- KEY SWITCHES   会话中途换账号导致的缓存失效（多账号路由场景）
+
+经验值：压缩本身只吃掉 ≤2%，健康会话稳在 95%–97%。
+低于这个值的归因概率排序：①上游缓存 TTL 到期 ②切换模型 ③bili 的 bug
+④其他/未知。
+HTTP 同款：GET /__bili/cache-report；每个请求的 [acp-usage] 行也落日志。
+
+----------------------------------------------------------------
+十、Web UI 与调试
+----------------------------------------------------------------
+打开 http://localhost:8787 ：
+- 总览仪表盘、会话列表（含逐会话详情）、实时日志、配置编辑器、上游连通性测试
+- 「博客」页直接渲染发布笔记与长文（随装内置，在线时后台从 GitHub master 拉取）
+- 纯 JSON 端点：/__bili/stats、/__bili/sessions、/__bili/config、
+  /__bili/health、/__bili/status 等，方便脚本化
+- 健康检查：curl -s http://localhost:8787/__bili/health
+  返回 {"ok":true,"upstream":"https://api.anthropic.com"}
+- 实时统计：curl -s http://localhost:8787/__bili/stats
+
+日志文件：~/.local/state/billion-context/bili.log（同时镜像到 stderr；
+>10MB 自动轮转为 bili.log.old）
+会话数据：~/.local/share/billion-context/（Windows 为
+%USERPROFILE%\.local\share\billion-context\，建议加入杀软排除项）
+
+----------------------------------------------------------------
+十一、自动更新与严重缺陷公告
+----------------------------------------------------------------
+- 启动时和每 3 分钟检查 npm 新版本；发现后原位安装并提示重启（或在安全点自重启，
+  需 --auto-restart-on-update）。
+- 升级撒点（#3619）：每台实例在 15 分钟–48 小时窗口内随机抽一个时刻再升，
+  把全量升级摊开，给坏发版留响应窗；抽中时刻落盘，重启不重摇。
+- 公开策略文件 auto-update-policy.json 提供 hold（全局冻结）/ blocked（跳过版本）/
+  pinned（升级天花板），fail-open。
+- 严重缺陷公告（advisories）：独立 npm 包 billion-context-advisories，
+  指定 affected 版本范围 + 应安装的 target（可以比当前更旧 = 回滚）+ 原因；
+  命中时强制走自更新安全链路，并在日志 / Web UI / /__bili/status 提示。
+- 永久禁用：配置 "autoUpdate": false 或环境变量 ACP_AUTO_UPDATE=0。
+
+----------------------------------------------------------------
+十二、会话机制（要点）
+----------------------------------------------------------------
+- 以「客户端自己提供的会话值（原样照搬）」为键隔离压缩状态，不哈希；
+  该 id 只在代理内部使用，绝不上送。
+- 取值来源：插件专用 header → 客户端专属 header（x-claude-code-session-id、
+  x-grok-session-id、x-mavis-session-id、x-opencode-session-id 等）→ 通用 header
+  → body 字段（session_id / prompt_cache_key）。
+- 不发会话 id 的客户端（如 pi 裸跑）走「匿名前缀亲和」：只有当请求历史从第 0 条
+  开始逐字节复现某已存会话时才挂回该会话，否则分配新的 pfa-… 会话。
+- 派生子会话（subagent / fork）出生时上报父会话 id，子会话对从未见过的内容
+  可沿父链回退 decompress / search_context（环检测、深度上限 8），不复制内容、
+  不改父会话。
+- 上游粘性路由只转发客户端本来就提供的身份值，绝不自行合成。
+- 会话文件清理是 opt-in（BILI_SESSION_GC=1），只删「超龄且从未被压缩过」的小文件。
+- 存储维护 CLI：bili sessions ls / rm / archive / restore；bili storage gc。
+
+----------------------------------------------------------------
+十三、论文与第三方评测（README 摘录）
+----------------------------------------------------------------
+论文（MIT 开源，位于 paper/ 目录，活文档）：
+《模型驱动的分层增量压缩：面向长寿命编码 Agent 的免训练多代上下文管理》(v0.2)
+生产规模纵向研究：四个半月、三宿主、174,327 次模型调用、187.6 亿累计输入 token
+（三宿主合计约 247 亿），204,800-token 窗口零违规，马拉松会话 8,584–12,049 次调用。
+
+第三方 1,500 题三大基准横评（DeepSeek V4.1 Flash + Qwen3-Embedding-8B +
+Qwen3-Reranker-4B + Pi Agent，对比 full 全量上下文与 3 条 RAG 管线）：
+- ContextBench 端到端有效 F1 全场第一：0.3097（比 full 省钱 58.3%）
+- LongMemEval-S：79.20%，领先最强 RAG（62.60%）16.6 个百分点，
+  比独立会话 full 省钱 71.1%
+- MemoryAgentBench：1.48M 超长会话实现 100% 存活与 30× 稳态压缩
+  （full 199 题全部爆窗崩溃）
+
+----------------------------------------------------------------
+十四、常见问题
+----------------------------------------------------------------
+Q：怎么查缓存命中率？
+A：/acp-cache 打文字报告 + Web UI 链接；HTTP 用 GET /__bili/cache-report。
+   健康值 95–97%，压缩代价 ≤2%。
+
+Q：压缩什么时候发生？
+A：由模型驱动（注入工具 + 约 50K token 步长的温和 nudge + 超窗预检硬兜底）。
+
+Q：压缩会缩小客户端自己的对话文件吗？
+A：不会。压缩缩的是「发给模型的内容」；客户端自己存的对话历史是用户数据，
+   bili 从不改写。dsh 上宿主自带的自动压缩在 bili 激活时也会被关闭，
+   因此宿主侧文件随每轮增长（约 3 万条消息时每轮可能几十秒），
+   实际收敛路径是重开一个新会话。
+
+Q：为什么第一次压缩要到 ~200k 才触发？
+A：触发按「增长区间」而非绝对窗口位置：默认在开机内容之上增长 50k token
+   才触发第一次软压缩。想更早：删减系统提示/关闭不需要的工具/精简 skill、
+   调小 nudge、开启 lean 功能。
+
+Q：bili 是透明的吗？怎么关掉？
+A：未识别端点原样转发；原生安装用 bili plugin remove <client>，
+   另两种模式停掉启动器 / 环境变量 / /bili/ 前缀即可，流量立刻恢复直连。
+
+Q：能配合模型路由网关（如 magpie）用吗？
+A：能。客户端指向 bili，bili 经 /bili/ 前缀指向网关；压缩发生在路由之前，
+   凭据留在网关内。
+
+Q：日志和会话数据存在哪？
+A：日志 ~/.local/state/billion-context/bili.log；
+   会话状态 ~/.local/share/billion-context/（XDG 可覆盖）。
+
+Q：一台机器装了两份 bili（如两个 DSH profile）？
+A：默认共用同一份 XDG 会话目录和配置，会双写 index.db 导致 SQLITE_BUSY。
+   正确做法是隔离：每份安装设独立的 BILI_SESSIONS_DIR（必要时加
+   BILI_CONFIG_FILE）。
+
+----------------------------------------------------------------
+十五、许可与署名
+----------------------------------------------------------------
+MIT 许可 + 一条附加条款：任何「终端用户可见或可交互」且使用了本软件的产品或服务
+（无论商业或开源），须在其首页、文档或「关于/致谢」页面注明使用了
+billion-context 并附本仓库链接；纯服务端/内嵌用途随附文档声明即可。
+详见仓库 LICENSE 末尾「附加条款」。
+
+----------------------------------------------------------------
+十六、相关链接
+----------------------------------------------------------------
+GitHub：https://github.com/ranxianglei/billion-context
+npm：https://www.npmjs.com/package/billion-context
+内核 acp-kernel：https://github.com/ranxianglei/acp-kernel
+pi 版独立包：https://github.com/ranxianglei/billion-context-pi
+opencode 版独立包：https://github.com/ranxianglei/opencode-acp
+文档：README.md / README.zh-CN.md、CLIENTS.zh-CN.md、
+      CONFIGURATION.zh-CN.md、TECHNICAL-NOTES.zh-CN.md、
+      SESSION-IDENTITY.md、MESSAGE-IDENTITY.zh-CN.md
+社区：QQ 群 1056132097（已满）、1108730198（已满）、1129868472（未满）
+================================================================

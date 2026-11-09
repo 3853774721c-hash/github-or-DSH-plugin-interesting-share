@@ -1,0 +1,40 @@
+Lively Wallpaper（动态桌面壁纸）
+GitHub: https://github.com/lively-community/lively
+（原地址 rocksdanister/lively 已迁移到 lively-community 组织，作者 rocksdanister）
+官网: https://livelywallpaper.net  ｜  微软商店可直接安装
+20,000+ Star，1,400+ Fork，GPL-3.0 开源，主力语言 C#，2019 年开源
+
+一、是什么
+免费开源的 Windows 动态壁纸 / 屏保软件：把视频、GIF、网页、甚至 Unity/Godot 游戏和
+着色器直接铺到桌面上当壁纸。相当于"开源版 Wallpaper Engine"，没有付费墙、没有内购。
+
+二、支持的壁纸类型
+1) 视频 / GIF：mpv/vlc 硬件解码，可加自定义视频滤镜。
+2) 网页（HTML/JS/CSS）：内置精简 Chromium 渲染器，支持交互，分辨率随内容变化。
+3) 应用程序 / 游戏：Unity、Godot 做的游戏或程序都能跑成壁纸。
+4) Shadertoy：直接填 shadertoy.com 的 URL 当壁纸。
+5) 机器学习壁纸：用 ML 推理生成动态效果（仓库自带 depth 深度视差示例）。
+6) 屏保：任意壁纸都能设为 Windows 屏保，支持多显示器。
+
+三、特色功能
+- 拖拽即用：媒体文件、网页直接拖进 Lively 就能设成壁纸。
+- 命令行控制 + Lively API：可从终端切换壁纸，也可被 Python/AutoHotkey 等脚本调用；
+  API 还能给壁纸喂硬件读数、音频频谱、音乐信息，做会随音乐/CPU 跳动的交互壁纸。
+- 性能策略：全屏应用或游戏运行时自动暂停壁纸（≈0% CPU/GPU）；可按前台程序设规则；
+  笔记本电池供电时暂停；远程桌面会话中自动暂停。
+- 界面用 WinUI 3 + WindowsAppSDK，原生 Windows 11 风格。
+- 完全免费开源（GPL-3.0），无内购。
+
+四、版本与下载（2026-11 查到的信息）
+- 最新正式版 v2.2.1.0（2025-09-18，代号 "Big Update - Follow Up"），安装包
+  lively_setup_x86_full_v2210.exe 约 218 MB，单文件下载量已超 260 万次。
+- v2.2.1.0 新增：按显示器指定哪个壁纸出声（Audio by Display）、可视化音频源选择、
+  应用内切换 Beta/Testing 更新通道、Span 布局暂停规则改进、更新 MPV/CefSharp 播放器。
+- 仓库默认分支为 core-separation（作者在做核心拆分重构）。
+- 安装要求：Windows 10 1809+ 或 Windows 11；也可从 Microsoft Store 安装。
+
+五、适合谁 / 注意事项
+- 适合想让桌面"活起来"、又不想买 Wallpaper Engine 的人。
+- 动态壁纸持续吃 GPU/显存：笔记本建议开"电池暂停"，游戏时让它自动暂停最省心。
+- 网页类壁纸本质是在跑浏览器，复杂页面明显占资源，挑选时留意。
+- 安装包体积大，部分杀软可能对 CefSharp/mpv 组件误报，属正常现象。

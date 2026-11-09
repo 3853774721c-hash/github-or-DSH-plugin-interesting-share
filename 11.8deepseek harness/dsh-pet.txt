@@ -1,0 +1,235 @@
+================================================================
+dsh-pet —— 住在 DeepSeek Harness 里的蓝色大肥鱼桌宠
+配套资料整理 | 依据：npm 包元数据（v0.4.7）、包内文件清单、源码结构、
+官方 README、仓库与许可声明
+================================================================
+
+【一句话定位】
+dsh-pet 是一只住在 DeepSeek Harness 里的桌面宠物（web 端浮动挂件）：
+一只"吃白饭的蓝色大肥鱼"，平时玩魔方、吃零食、打盹、在桌面上溜达，
+被你拖来甩去也照旧赖着；你忙它跟着忙，闲下来爱碎碎念，还乐意陪你唠两句。
+它有一百余个透明动画，可多开，也能"上桌面"（Electron 独立桌面模式）。
+
+官方原话（npm 描述，中文原文）：
+"吃白饭的蓝色大肥鱼，赖在 DeepSeek Harness 里不走了。平时爱玩魔方、
+爱吃各种零食、偶尔打个盹，闲不住就在桌面上溜达两圈，被你拖来甩去也照旧赖着；
+你忙起来它跟着忙前忙后，也会帮你打理余额钱包，闲下来爱碎碎念，
+还乐意陪你唠两句。"
+
+它同时也是本轮运行环境中很多用户看到的那只会游来游去的鱼 ——
+只是很多人不知道它还有聊天面板、钱包、表情包、通知和独立桌面模式。
+
+----------------------------------------------------------------
+一、基本信息
+----------------------------------------------------------------
+插件市场名称 / npm 包名：dsh-pet
+最新版本（整理时）：0.4.7（发布于 2026-11-08）
+首次发布：0.1.0（2026-08-14）
+许可证：MIT（代码）+ 素材附加条款
+维护者：PC2005-cloud（pc2005-cloud）
+GitHub：https://github.com/PC2005-cloud/dsh-pet
+npm：https://www.npmjs.com/package/dsh-pet
+engines：node >= 22.12.0
+包类型：ESM（type: module）
+包体积：unpackedSize 约 78.6 MB / 1150 个文件（大量透明动画与素材）
+关键词：dsh、dsh-plugin、deepseek-harness、desktop-pet、pet、
+       floating-widget、web-ui、cordis、react
+
+dist-tags：
+  latest → 0.4.7
+  test → 0.4.1
+  webm-test → 0.2.0
+  webm → 0.1.9-webm-test
+  hevc → 0.2.0-hevc
+（hevc / webm 是动画编码试验通道，普通用户装 latest 即可）
+
+安装命令（普通 dsh web）：
+  dsh plugin --profile web add dsh-pet
+或在 DSH 桌面端的「插件」页 / 插件市场（dshmarket）里搜索 dsh-pet 一键安装，
+在插件卡片里打开它自己的设置/控制面板。
+
+----------------------------------------------------------------
+二、它到底能干什么（按可见功能拆解）
+----------------------------------------------------------------
+1) 桌面宠物本体
+   - 一百余个透明背景动画（webm VP9-alpha，640×360），
+     覆盖待机、游动、打盹、玩魔方、吃零食、被拖动、被甩、忙碌跟随、
+     碎碎念、打招呼等状态。
+   - 默认在界面右下角悬浮；可拖动、可甩（带物理惯性），
+     拖到任意位置后自己溜达回来。
+   - 可多开：同时养多条鱼（每条独立位置/状态/对话），
+     适合多工作区或纯粹想热闹的人。
+   - 点击交互：戳一下、喂食（白饭/饭团）、聊天、塞表情包等。
+
+2) 聊天面板（lib/chat-panel.js）
+   - 点鱼弹出聊天面板，直接和 DSH 当前配置的模型对话（走宿主 LLM，
+     不需要另外配 key；依赖 @deepseek-ai/dsh-agent-default-model）。
+   - 支持流式回复、对话历史、角色口吻（鱼会碎碎念）。
+   - 可与主对话并行，用来"唠两句"而不污染正经会话。
+
+3) 余额钱包
+   - 帮你"打理余额钱包"：在宠物卡/面板里查看当前账户余额与用量，
+     对应宿主 credentials 与已配置 provider。
+   - 鱼会把余额当自己的饭钱碎碎念（例如没钱了会喊饿）。
+
+4) 表情包 / 梗图
+   - 包内自带约 25 张中文梗图（assets/memes），
+     文案如"token给妈妈保管""压力一只大肥鱼""黎曼猜想没证明喵"等。
+   - 触发场景：长任务、报错、上下文吃紧、你摸鱼、它饿了等，
+     在气泡里弹梗图，属于"情绪价值"功能。
+
+5) 通知
+   - assets/pic 内有 notify-*.png 系列通知图；任务完成/失败/需要授权时
+     鱼会冒头提醒（配合宿主通知机制），不至于错过长任务结果。
+
+6) 语音（TTS）
+   - 依赖 @andresaya/edge-tts：可用 Edge TTS 让鱼说话（念回复/碎碎念），
+     在设置里开关与选音色。
+
+7) 独立/桌面模式（"能上桌面"）
+   - 提供 bin：dsh-pet-standalone（→ lib/standalone.js），
+     可脱离 DSH 页面单独运行宠物窗口。
+   - 含 Electron 桌面 helper（runtime/electron-helper）：
+     托盘图标（tray.js）、多窗口（windows.js）、多屏 DPI 适配（dpi.js）、
+     置顶看门狗（topmost-watchdog.js）、任务栏看门狗（taskbar-watchdog.js）、
+     X11 指针（x11-pointer.js）、主进程/桥接/preload（main.js/bridge.js/preload.js）。
+   - scripts 提供 start:desktop / build:desktop-core / ensure:electron，
+     首次运行会按需下载 Electron（@electron/get + @electron-internal/extract-zip）。
+   - 所以"上桌面"= 宠物可以脱离浏览器，待在 Windows 桌面/托盘上。
+
+8) 设置与控制
+   - 设置卡片（dsh 0.1.x「设置 → 插件」；0.2.x 起在插件页该插件卡片上）：
+     模型选择、动作/动画开关、多开管理、头像与宠物卡、
+     通知开关、TTS 开关与音色、位置与缩放、重置等。
+   - 自带命令（lib/index.js 注册 DSH 命令，依赖 dsh-commands），
+     可用斜杠命令召唤/隐藏/静音/喂食等。
+
+9) 小游戏/彩蛋
+   - 玩魔方、吃零食、打盹等 idle 行为；被甩会生气；
+     长时间不理会会自己找事干（"闲不住就在桌面上溜达两圈"）。
+
+----------------------------------------------------------------
+三、安装与使用
+----------------------------------------------------------------
+前置：Node.js >= 22.12.0；DSH 在 0.2.1-rc.3 / 0.2.2-alpha.2 / 0.2.2-rc.1
+上被作者标记为 compatible（更老版本未验证）。
+
+方式 A：命令行
+  dsh plugin --profile web add dsh-pet
+  重启 dsh web，右下角出现鱼即成功。
+
+方式 B：桌面端 / 插件市场
+  DSH Desktop → 设置/插件 → 搜索 dsh-pet → 安装；
+  或装 dshmarket 后在市场里搜 dsh-pet 一键安装。
+
+方式 C：独立桌面模式（想让它待在桌面上而不是网页里）
+  安装后运行 dsh-pet-standalone，或开发态用包内 Electron 流程：
+  ensure:electron → start:desktop（首次会下载 Electron）。
+
+使用要点：
+- 拖拽移动、松手甩出；右上角/面板里有隐藏、静音、多开、设置入口。
+- 与主对话互不干扰；它的聊天是独立会话。
+- 换模型时鱼的口吻会跟着系统提示变。
+
+----------------------------------------------------------------
+四、技术架构
+----------------------------------------------------------------
+宿主半侧（lib/index.js，Cordis 插件）：
+  - name / inject / apply 结构；依赖宿主服务，注册命令、设置卡片、
+    数据持久化目录（@deepseek-ai/dsh-home-paths）、
+    credentials（读余额）、webserver（@deepseek-ai/dsh-host-webserver）、
+    llm（@deepseek-ai/dsh-llm）、agent-default-model。
+  - 打包用 tsdown；产物 lib/ 为 ESM。
+
+浏览器半侧（lib/client.js，exports "./client"）：
+  - client.platform: "web"，注入 @deepseek-ai/dsh-client-connection，
+    通过 UI slots（@deepseek-ai/dsh-client-ui-slots）挂到界面右下角，
+    用 @deepseek-ai/dsh-client-ui-primitives 复用宿主组件，React 18 渲染。
+  - 动画播放：assets/webm 的 VP9-alpha 透明视频，
+    Chrome/Edge/Firefox 与桌面模式共用；Safari/HEVC 版本由仓库流水线单独支持
+    （fork 定制），不随 npm 包发布。
+  - 动画管线：scripts.encode:webm（step03 母版 → 640×360 VP9-alpha），
+    素材白名单见 package.json 的 files 字段。
+
+桌面/独立侧（lib/standalone.js + runtime/electron-helper/）：
+  - Electron 主进程负责窗口（透明、无边框、点击穿透可切换）、
+    托盘、多屏 DPI、置顶与任务栏层级修复、X11 指针坐标换算。
+  - bin 名 dsh-pet-standalone，可直接作为桌面宠物启动。
+
+配置与数据：
+  - 包内 assets/config.jsonc（约 36 KB）是宠物行为的默认配置素材
+    （动作表、台词、表情、场景触发等）。
+  - 运行期设置与状态写入 DSH 的 profile/用户数据目录；
+    多开实例各自独立状态。
+  - icon：assets/logo.png，由 dsh-app-boot 的 iconOf 内联为 base64 data URL
+    放进插件 meta.icon（要求 ≤256 KiB 且 realpath 留在包目录内）。
+
+依赖（runtime）：
+  @andresaya/edge-tts ^1.9.1（语音）、
+  @anthropic-ai/sdk 0.135.0、openai 7.39.0（多协议模型调用）、
+  @electron/get ^5.1.0、@electron-internal/extract-zip ^1.0.5（桌面模式下载 Electron）、
+  zod 4.6.7（配置校验）
+peerDependencies：
+  @deepseek-ai/cordis ^4.0.4、dsh-agent-default-model、dsh-client-connection、
+  dsh-client-ui-primitives、dsh-client-ui-slots、dsh-commands、dsh-credentials、
+  dsh-home-paths、dsh-host-webserver、dsh-llm（均为 ^0.2.0-rc.1）、
+  react ^18.2.0、react-dom ^18.2.0
+dsh 元数据：
+  bundle.patch = ./cordis.patch.yml
+  client.inject = ["@deepseek-ai/dsh-client-connection"]
+  client.platform = "web"
+
+工程脚本（说明工程质量）：bundle(tsdown)、watch、typecheck、types、lint、
+  format、check:cycles、check:runtime、check:openapi、test（node
+  --experimental-strip-types）、test:ui、dev:mock、dev:subpath、
+  build(prepare.js)、prepack（含 prepack 检查链）、dist、standalone 等。
+
+源码组织：src/ 下按 host / client / standalone / electron-helper 分层，
+每层带 .test.ts；包内同时发布 lib/（构建产物）、src/（源码）、assets/（素材）。
+
+----------------------------------------------------------------
+五、素材与许可
+----------------------------------------------------------------
+- 代码：MIT。
+- 美术素材（鱼形象、表情包、通知图等）：禁止商用。
+- 二创/二次分发：在公开渠道发布必须署名原作者与仓库。
+  也就是说你可以自己改、自己玩，但拿它做商业产品、或抹掉署名再发布是不允许的。
+- 表情包文案与梗图多来自中文互联网语境，属吐槽用素材。
+
+----------------------------------------------------------------
+六、常见问题
+----------------------------------------------------------------
+Q：装完看不到鱼？
+  A：先确认 DSH 版本 >= 0.2.1-rc.3；刷新页面；检查是否被其他右下角挂件遮挡，
+     或在设置里把缩放/位置重置一次。桌面端要从应用内插件管理器装，
+     只写 profiles/web 不会出现在桌面应用里。
+
+Q：能同时养很多条吗？
+  A：可以，多开功能支持多条鱼并行，各自独立状态与对话。
+
+Q：它会不会偷跑 token？
+  A：只有你主动聊天/让它回复时才调用模型；idle 动画与碎碎念是本地台词，
+     不走 API。钱包功能只读取余额信息。
+
+Q：能关掉声音/通知/梗图吗？
+  A：设置卡片里各有开关；也可以只留动画、关掉其余交互。
+
+Q：怎么让它上 Windows 桌面（脱离浏览器）？
+  A：用 dsh-pet-standalone（或包内 Electron 桌面流程）。
+     首次会下载 Electron，注意网络；桌面模式与 web 模式可同时开。
+
+Q：升级？
+  A：dsh plugin --profile web add dsh-pet（重复执行即升级到 latest），
+     或在插件市场里点更新；随后刷新/重启宿主。
+
+Q：卸载后素材还在吗？
+  A：卸载插件即移除包目录；用户数据目录里的宠物设置可手动清理。
+     卸载不影响聊天记录。
+
+----------------------------------------------------------------
+七、链接
+----------------------------------------------------------------
+GitHub（安装与完整文档）：https://github.com/PC2005-cloud/dsh-pet
+npm：https://www.npmjs.com/package/dsh-pet
+许可证：MIT（代码）+ 素材非商用 + 二创署名
+================================================================

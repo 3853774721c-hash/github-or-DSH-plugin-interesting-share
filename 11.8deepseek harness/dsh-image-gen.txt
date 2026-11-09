@@ -1,0 +1,262 @@
+================================================================
+dsh-image-gen —— DeepSeek Harness 原生图像创作插件（插件市场收录）
+配套资料整理 | 依据：npm 包元数据、官方中文 README（v0.11.1）
+================================================================
+
+【一句话定位】
+在 DeepSeek Harness 里，用「说话」的方式画图。
+它不是往对话框塞一个生图按钮，而是让 Agent 本身学会画图：一次规划并生成一整组图、
+看懂你在画布上的涂鸦和圈选、自己去 500+ Prompt 灵感库里找风格模板；
+需要精细控制时还有 Studio 工作台、多模型对比和图库。
+官方标语：对话批量生图 · GIF 动图 · 看得懂草图的 AI 画布 ·
+          Agent 自动套用 500+ Prompt 灵感 · 订阅账号免 Key
+
+----------------------------------------------------------------
+一、基本信息
+----------------------------------------------------------------
+插件市场名称 / npm 包名：dsh-image-gen
+最新版本（整理时）：0.11.1
+许可证：Apache License 2.0
+作者 / 仓库：shanliuling
+GitHub：https://github.com/shanliuling/dsh-image-gen
+npm：https://www.npmjs.com/package/dsh-image-gen
+国产镜像托管：https://atomgit.com/shanliuling/dsh-image-gen
+npm 包描述（原文）：
+"Bring ChatGPT-like image generation to DeepSeek Harness — Gemini, OpenAI,
+ Seedream, DashScope, local ComfyUI & more."
+
+环境要求：
+- DeepSeek Harness 稳定版本
+- Node.js ^22.19.0 或 >= 24.0.0
+
+支持 Provider（概览）：
+Gemini · OpenAI / OpenAI Compatible · 字节 Seedream / 火山方舟 ·
+阿里 DashScope / Qwen Image · xAI Grok Imagine · 智谱 GLM-Image · 本地 ComfyUI ·
+以及 ChatGPT / Grok / Google 订阅账号（免 API Key）
+
+补充：当前 DSH 运行环境的默认图像 provider 就是 dashscope，
+生成/编辑模型为 qwen-image-3.0 —— 这正是本插件对接的渠道。
+
+----------------------------------------------------------------
+二、安装
+----------------------------------------------------------------
+在 DeepSeek Harness 项目根目录执行：
+    pnpm dsh plugin --profile web add dsh-image-gen@latest
+
+其他方式：
+    # 已把 dsh 装成系统全局命令时
+    dsh plugin --profile web add dsh-image-gen@latest
+
+    # 从 GitHub 仓库直接安装最新代码
+    pnpm dsh plugin --profile web add git+https://github.com/shanliuling/dsh-image-gen.git
+
+    # 本地克隆源码开发安装
+    git clone https://github.com/shanliuling/dsh-image-gen.git
+    pnpm dsh plugin --profile web add ./dsh-image-gen
+
+小技巧：也可以直接在 DSH 对话里对 Agent 说
+「帮我安装生图插件，在终端执行：pnpm dsh plugin --profile web add dsh-image-gen@latest」
+
+升级：
+    pnpm dsh plugin --profile web add dsh-image-gen@latest
+    # 然后重启对应的 DSH Profile
+每个版本的更新内容见 GitHub Releases。
+
+----------------------------------------------------------------
+三、配置 Provider
+----------------------------------------------------------------
+1) 重启 DSH。
+2) 点左侧边栏「插件」图标 →「已安装」分区 → 点 dsh-image-gen
+   → 插件详情页里的「图像生成」配置表单。
+   注：DSH 0.1.5 及更早没有插件面板，入口为
+   「设置 → 插件 → 插件配置 → 图像生成」；插件同时兼容两种入口。
+3) 选择 Provider，填写自己的 API Key，按需调整模型、Endpoint / Base URL、
+   工作区保存选项。
+   - 点「测试连接」验证可用性
+   - 点「拉取模型」一键获取该厂商全部生图模型，无需手查文档
+4) ComfyUI：填写 DSH Host 可访问的服务地址，并导入 API Format Workflow JSON；
+   导入多个工作流后，可在对话输入框旁的生图按钮里直接切换。
+5) 订阅账号（ChatGPT / Grok / Google）：无需 API Key，
+   展开对应订阅 Provider 行 → 点「登录」→ 浏览器完成授权，即可文生图与图生图。
+
+----------------------------------------------------------------
+四、核心能力
+----------------------------------------------------------------
+◆ 对话批量生图（chat-batch）
+  - 一句话描述数量和统一要求，Agent 自己规划出一组 Prompt，
+    单次最多 10 张，图片按顺序附在同一条回复里。
+  - 比例、清晰度、模型、Provider 可对整组统一指定，保证风格一致。
+  - 逐张生成，某一张失败不影响其余；最后汇报「成功 X / 共 Y」并列出失败原因。
+  - 本地 ComfyUI 与订阅通道同样支持批量。
+  - 与 Studio 批量的区别：
+      对话批量 = Agent 帮你规划「一组不同的画面」；
+      Studio 批量 = 同一个 Prompt 出多张候选，由你挑选。
+
+◆ 看得懂草图的 AI 画布
+  - 无限画布上画草图、摆参考图、圈出要改的地方，然后用对话告诉 AI。
+    Agent 能看到画布上的内容和你当前的选区，不需要截图/上传/描述位置。
+  - 草图 → 成图：随手画轮廓，选中说「画成卡通角色」。
+  - 圈哪改哪：在已有图片上圈出局部，说「把这里换成斧头」，只改圈出的部分。
+  - 组合参考：把「最近生成」或图库里的图拖进画布，或点缩略图「发送到画布」，
+    多张一起选中作为参考；同一张历史图片重复导入会自动去重。
+  - 每一步结果都留在画布上，可从任意一版继续迭代。
+
+◆ 对话生图、编辑与版本切换
+  - 自然语言完成文生图、图生图、多图参考、风格迁移。
+  - 角色一致性：要求「保持这个人物/角色/物体不变」时，插件让模型沿用参考图里的
+    同一主体，只改场景、服装、姿势或风格，而不是重新画一个相似的人。
+  - 可直接修改原图 Prompt 重新生成，并在同一图片卡片中切换历史版本。
+
+◆ GIF 动图：生成、播放、按帧修改
+  - 用 GPT Image 2.6 等支持动图的模型，直接说「做成 GIF / 动图」即可得循环动画；
+    也可把参考图里的角色做成动图。
+  - 参数：frame_count（2–16）、frame_duration_ms（20–2000 ms）。
+  - 卡片内直接播放：左下角调倍速（0.2×–2×）；下载菜单可按当前倍速或原速下载 GIF、
+    或下载当前帧（PNG）；点开大图有播放键、逐帧缩略图时间轴
+    （悬停预览、点击停帧）和倍速。
+  - 图库里的 GIF 带角标、悬停即播放，大图同样可播放与下载；GIF 可直接拖出，
+    重新生成仍得到 GIF（剪贴板只支持静态图，复制得到单帧）。
+  - 按帧编辑：卡片右下角「编辑」（或大图播放条「编辑帧」）可在画面上点位置写评论，
+    评论只显示在所属帧，也可切「全部帧」一起看；一次发送即按评论重绘整段，
+    新结果作为新版本保留并会动（仅 OpenAI 与兼容渠道，且中转需支持图生图）。
+  - 不支持时无提示可一键改为「描述后重新生成」。
+  - ChatGPT 订阅使用的 Codex 图片接口上游未开放 GIF，暂不支持。
+
+◆ 500+ Prompt 灵感库：Agent 会自己去找
+  - 内置「手绘风格手册」（风格 / 排版 / 单色主题色）+「awesome-gpt-image-2」案例集，
+    共 500+ 个可直接复用的 Prompt。
+  - 对话里直接点名：「用风格 #123」「做成信息图排版」「莫兰迪色系」——
+    Agent 会先在灵感库检索，再把模板套到你的主题上出图；风格、排版、主题色可组合。
+  - 界面里可浏览：筛选、收藏、复制，或一键带入工作台。
+  - 图片缓存在本地，浏览与学习不消耗 Token 或生成额度。
+
+◆ Studio 工作台：不用对话，自己调参数
+  - 打开「会话顶部 → 画廊 → 工作台」。
+  - 从灵感库「带入工作台」，Prompt 自动填好。
+  - 参数一目了然：Provider、模型、比例、生成质量、水印；一次出 1–4 张候选，
+    满意的才保存。
+  - 从「最近生成」拖图进来 → 点「继续编辑（垫图）」→ 自动切图生图，
+    参考图最多 5 张。
+  - 单模型 / 多模型对比一键切换。
+  - 注：Studio 与多模型对比目前只支持云端 Provider（含订阅通道），
+    暂未接入本地 ComfyUI。
+
+◆ 多模型横向对比
+  同一组 Prompt 和参考图并发调用多个模型，在一张画布中比较并保存结果。
+
+◆ 图库、收藏与批量管理
+  统一管理对话和 Studio 中保存的图片，按工作区隔离；支持搜索、筛选、收藏、
+  下载、继续编辑、重新生成与批量管理。
+
+◆ 本地 ComfyUI 多工作流
+  - 导入并管理多个命名工作流，支持预设 Prompt 和常用占位符。
+  - Agent 可按名称选择工作流，在对话中完成文生图、图生图、批量生图。
+  - 占位符：
+      {{prompt}}  提示词
+      {{seed}}    随机种子
+      {{width}} / {{height}}  宽高（写了 Agent 传入的尺寸/比例才生效，默认 1024×1024）
+      {{image}}   图生图输入（写在 LoadImage 节点；多张参考图写多个，
+                  按节点编号顺序对应）
+
+----------------------------------------------------------------
+五、Provider 支持情况（官方表格）
+----------------------------------------------------------------
+Provider                          对话生图 对话批量 对话编辑   Studio 多模型对比 GIF
+Google Gemini                        ✅      ✅     ✅多图     ✅      ✅       —
+OpenAI Images                        ✅      ✅     ✅多图     ✅      ✅       ✅
+OpenAI Compatible（中转站）            ✅      ✅     ✅多图     ✅      ✅       ✅
+ByteDance Seedream / 火山方舟          ✅      ✅     ✅多图     ✅      ✅       —
+Aliyun DashScope / Qwen Image        ✅      ✅     ✅多图     ✅      ✅       —
+xAI Grok Imagine                     ✅      ✅     ⚠️有限     ✅      ✅       —
+智谱 GLM-Image                       ✅      ✅       —       ✅      ✅       —
+Local ComfyUI                        ✅      ✅     ✅多图      —       —       —
+ChatGPT 订阅（免 Key）                 ✅      ✅     ✅多图     ✅      ✅       —
+Grok 订阅（免 Key）                    ✅      ✅     ✅多图     ✅      ✅       —
+Google 订阅（免 Key）                  ✅      ✅     ✅多图     ✅      ✅       —
+
+备注：
+- Studio 与多模型对比只支持云端 Provider（含订阅通道）；
+  多模型对比调用的是各 Provider 在设置里已配置的模型。
+- 智谱 GLM-Image 上游本身不支持图生图；
+  xAI 图生图走 OpenAI 兼容协议（multipart），部分网关可能需后续适配。
+- 订阅通道通过账号登录使用（免 API Key），图生图走各订阅渠道的编辑接口
+  （最多 5 张参考图），比例与清晰度可在 Studio 中选择。
+- 默认模型与 Endpoint、各 Provider 的比例/清晰度、尺寸表、水印、
+  中转站编辑格式等高级配置见仓库 docs/providers.md。
+
+----------------------------------------------------------------
+六、数据与隐私
+----------------------------------------------------------------
+- BYOK：API Key 通过 DSH Credentials 服务保存，设置页不回显明文。
+- 订阅登录：订阅账号令牌经授权登录后保存于 DSH Credentials，与 API Key 完全隔离，
+  浏览器侧不接触令牌。
+- 云端请求：Prompt 与本次使用的参考图会发送给所选 Provider，请遵守其服务条款。
+- 上游图片下载：沿用宿主已有的网络与代理配置，不额外拦截 Fake-IP、内网或回环地址；
+  当前未提供完整的 SSRF 目标限制。
+- 本地 ComfyUI：请求发送到用户配置的 ComfyUI 地址。
+- 工作区文件：开启工作区保存后，对话结果会落盘；Studio 仅保存用户选中的候选图。
+- GIF 原图：动图原始文件另存于原图保险库（vaultEnabled 可关闭），
+  随图库删除一并清理。
+- 图库与收藏：元数据和收藏状态保存在当前浏览器本地存储。
+- 删除记录：普通删除保留轻量图片 ID 标记，超过 30 天也不会因重开旧会话自动恢复。
+- 灵感缓存：案例元数据随插件提供，图片按需加载并缓存本机，可随时清理。
+
+----------------------------------------------------------------
+七、常见问题
+----------------------------------------------------------------
+Q：安装后找不到「图像生成」设置？
+A：入口随 DSH 版本不同：
+   0.1.6+ 在插件详情页（侧边栏「插件」→「已安装」→ dsh-image-gen）；
+   0.1.5 及更早在「设置 → 插件 → 插件配置 → 图像生成」。
+   若都找不到：完全重启当前 DSH Profile，再检查
+   `dsh --profile web --dump-config` 输出里有没有 dsh-image-gen；
+   没有就重装。提 Issue 时附 DSH 版本、插件版本、错误日志，勿上传 API Key。
+
+Q：一次最多批量生成多少张？
+A：对话批量单次最多 10 张，超过时插件会提示 Agent 拆成多次调用；
+   逐张生成，单张失败不中断其余，失败原因单独列出。
+
+Q：生成图片保存在哪里？
+A：开启「保存到工作区」后，默认保存在当前工作区的 dsh-image-gen/ 子目录，
+   可在设置中修改。Studio 候选图先留在临时画布，只有选中的才进图库并保存。
+
+Q：Gemini 中转只支持 generateContent 怎么配置？
+A：在 Google Gemini 设置里把「请求协议」改为「原生 generateContent」，
+   接口地址填中转 API 基础地址（如 https://your-relay.example/v1beta）。
+   配置文件对应 googleNative: true（默认 false，即 Interactions 协议）。
+
+Q：为什么 ComfyUI 没有出现在 Studio 中？
+A：当前 Studio 与多模型对比仅支持云端 Provider；ComfyUI 已支持对话中的
+   文生图、图生图（多张参考图）、批量生图与多个命名工作流。
+
+Q：从图库删除会删除聊天记录吗？
+A：不会。删除图库记录不修改原聊天消息；可另选是否清理工作区本地图片文件
+   （文件删除通常无法恢复）。
+
+Q：如何升级？
+A：pnpm dsh plugin --profile web add dsh-image-gen@latest，然后重启对应 Profile。
+
+----------------------------------------------------------------
+八、开发者信息（本地开发）
+----------------------------------------------------------------
+git clone https://github.com/shanliuling/dsh-image-gen.git
+cd dsh-image-gen
+pnpm install
+pnpm run typecheck
+pnpm test
+pnpm run build
+pnpm run pack:check
+pnpm run test:package
+维护者说明见 CONTRIBUTING.md；问题反馈走 GitHub Issues。
+
+----------------------------------------------------------------
+九、相关链接
+----------------------------------------------------------------
+GitHub：https://github.com/shanliuling/dsh-image-gen
+Release：https://github.com/shanliuling/dsh-image-gen/releases
+Issues：https://github.com/shanliuling/dsh-image-gen/issues
+npm：https://www.npmjs.com/package/dsh-image-gen
+AtomGit：https://atomgit.com/shanliuling/dsh-image-gen
+文档：README（中文）· README.en.md · docs/providers.md · CONTRIBUTING.md
+社区：LINUX DO（社区友链）
+================================================================
